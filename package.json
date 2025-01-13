@@ -1,6 +1,6 @@
 {
   "name": "rapid-responder",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Provides a comprehensive utility for handling responses across multiple communication protocols (HTTP, IPC, and Socket).",
   "main": "build/main.js",
   "author": "XuaNguyen <xuan.0211@gmail.com>",

@@ -353,7 +353,7 @@ class ResponseHandler {
         'Content-Type': processedBody.type,
         ...this.headers,
       },
-      body: JSON.stringify(processedBody.body),
+      body: processedBody.body,
     };
   }
 
