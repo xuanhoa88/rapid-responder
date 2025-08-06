@@ -1,30 +1,52 @@
+
 # Logs
-logs
+logs/
 *.log
 *.lock
-npm-debug.log*
 
-# Dependencies
+# Runtime data
+pids/
+tmp/
+*.pid
+*.seed
+
+# Yarn cache and Node.js dependency directories
+.yarn/
 node_modules/
+bower_components/
 
-# Coverage
-coverage
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Transpiled files
-build/
-
-# VS Code
-.vscode
-!.vscode/tasks.js
-
-# JetBrains IDEs
-.idea/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
+# Coverage and cache files
+.cache/
+coverage/
 .eslintcache
 
-# Misc
-.DS_Store
+# Build and distribution output
+build/
+dist/
+out/
+
+# IDE and editor-specific files
+.idea/
+*.swp
+*.swo
+*.iml
+npm-debug.log.*
+
+# Temporary files and backup files
+*.bak
+*.tmp
+*.temp
+~$*
+
+# Lockfiles
+*.lock
+package-lock.json
+
+# Ignore npm package folders for older setups
+jspm_packages/
+
