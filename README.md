@@ -1,6 +1,42 @@
 # Adaptive Response Handler
 
-A versatile JavaScript library designed for adaptive response handling across multiple communication protocols, including HTTP, IPC, and SOCKET. This library supports stream processing, MIME type detection, and advanced error handling to provide a robust solution for server-side or middleware applications.
+A versatile JavaScript library designed for adaptive response handling across multiple communication protocols, including HTTP, 
+IPC, and SOCKET. This library supports stream processing, MIME type detection, and advanced error handling to provide a robust 
+solution for server-side or middleware applications.
+
+---
+
+## Table of Contents
+- [Why use this?](#why-use-this)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Demo Output](#demo-output)
+- [Usage](#usage)
+  - [Importing the Module](#importing-the-module)
+  - [HTTP/IPC/SOCKET Responders](#example-http-responder)
+  - [Creating a Response Handler](#creating-a-response-handler)
+  - [Setting Status Code](#setting-status-code)
+  - [Handling Responses](#handling-responses)
+- [TypeScript Usage](#typescript-usage)
+- [Advanced Usage Examples](#advanced-usage-examples)
+- [API Reference](#api-reference)
+  - [Classes](#classes)
+  - [Error Classes](#error-classes)
+- [FAQ](#faq)
+- [Development & Testing](#development--testing)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Why use this?
+- **Unified API** for HTTP, IPC, and SOCKET responses
+- **Automatic stream and content type handling**
+- **Customizable error management**
+- **Production-ready**: battle-tested for server/middleware use
+- **Easy integration** with Express and other frameworks
+- **TypeScript-friendly** (with JSDoc types)
 
 ---
 
@@ -22,6 +58,62 @@ To install this package, use:
 npm install rapid-responder
 ```
 
+Or with Yarn:
+
+```bash
+yarn add rapid-responder
+```
+
+If you are using a monorepo (e.g., with workspaces):
+
+```bash
+yarn workspace <your-workspace-name> add rapid-responder
+```
+
+> **Note:** Requires Node.js v14 or higher.
+
+---
+
+## Quick Start
+
+> **Note:** Top-level `await` is only available in ES modules or inside async functions. For CommonJS, wrap in an async function or use `.then()`.
+
+```javascript
+const { httpResponder } = require('rapid-responder');
+
+async function main() {
+  // Send a 200 OK HTTP response
+  const response = await httpResponder.ok({ message: 'Hello, world!' });
+  console.log(response);
+  // {
+  //   statusCode: 200,
+  //   headers: { 'Content-Type': 'application/json', 'X-Response-Time': '...' },
+  //   body: { message: 'Hello, world!' }
+  // }
+}
+
+main();
+```
+
+---
+
+## Demo Output
+
+Example output for a successful HTTP response:
+
+```json
+{
+  "statusCode": 200,
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Response-Time": "2024-06-01T12:34:56.789Z"
+  },
+  "body": {
+    "message": "Hello, world!"
+  }
+}
+```
+
 ---
 
 ## Usage
@@ -29,7 +121,7 @@ npm install rapid-responder
 ### Importing the Module
 
 ```javascript
-const { ResponseHandler, STATUS_CODES, PROTOCOLS, httpResponder, ipcResponder, socketResponder } = require('rapid-responder');
+const { ResponseBuilder, STATUS_CODES, PROTOCOLS, httpResponder, ipcResponder, socketResponder } = require('rapid-responder');
 ```
 
 #### Example: HTTP Responder
@@ -64,11 +156,11 @@ socketResponder.serviceUnavailable({ message: 'Service is temporarily down' });
 ### Creating a Response Handler
 
 ```javascript
-const handler = new ResponseHandler({
+const handler = new ResponseBuilder({
   protocol: PROTOCOLS.HTTP,
   headers: { 'Content-Type': 'application/json' },
-  streamTimeout: 30000,
-  maxStreamSize: 50 * 1024 * 1024,
+  streamTimeout: 30000, // 30 seconds
+  maxStreamSize: 50 * 1024 * 1024, // 50MB
 });
 ```
 
@@ -83,8 +175,16 @@ handler.status(STATUS_CODES.ok);
 #### Non-Stream Response
 
 ```javascript
-const response = handler.send({ message: 'Hello, World!' });
-console.log(response);
+async function example() {
+  const handler = new ResponseBuilder();
+  const response = await handler.send({ message: 'Hello, World!' });
+  console.log(response);
+  // {
+  //   statusCode: 200,
+  //   headers: { ... },
+  //   body: { message: 'Hello, World!' }
+  // }
+}
 ```
 
 #### Stream Response
@@ -95,8 +195,132 @@ const readableStream = fs.createReadStream('./example.txt');
 
 handler.send(readableStream).then(data => {
   console.log(data);
+  // { body: <Buffer ...>, type: 'application/octet-stream', size: ... }
 }).catch(error => {
   console.error(error);
+});
+```
+
+---
+
+## TypeScript Usage
+
+```typescript
+import { ResponseBuilder, STATUS_CODES, httpResponder } from 'rapid-responder';
+
+async function main() {
+  const handler = new ResponseBuilder({ protocol: 'http' });
+  const response = await handler.status(STATUS_CODES.ok).send({ message: 'TS works!' });
+  // response: { statusCode: number, headers: object, body: object }
+  console.log(response);
+}
+
+main();
+```
+
+---
+
+## Advanced Usage Examples
+
+### Custom Error Handler
+
+```javascript
+const { ResponseBuilder, STATUS_CODES } = require('rapid-responder');
+
+const handler = new ResponseBuilder({
+  errorHandler: (error) => {
+    console.error('Custom error handler:', error.message);
+    const customError = new Error(`Processed: ${error.message}`);
+    customError.originalError = error;
+    return customError;
+  }
+});
+
+(async () => {
+  try {
+    // Simulate a stream error
+    const fs = require('fs');
+    const nonExistentStream = fs.createReadStream('non-existent-file.txt');
+    await handler.send(nonExistentStream);
+  } catch (error) {
+    console.log('Caught transformed error:', error.message);
+  }
+})();
+```
+
+### Stream Handling with Timeout and Size Limit
+
+```javascript
+const { ResponseBuilder, STATUS_CODES } = require('rapid-responder');
+const fs = require('fs');
+
+const handler = new ResponseBuilder({
+  protocol: 'http',
+  streamTimeout: 15000, // 15 seconds
+  maxStreamSize: 10 * 1024 * 1024, // 10MB
+});
+
+(async () => {
+  try {
+    const fileStream = fs.createReadStream('./large-file.txt');
+    const response = await handler.status(STATUS_CODES.ok).send(fileStream);
+    console.log('Stream processed:', response);
+  } catch (error) {
+    if (error.code === 'STREAM_TIMEOUT') {
+      console.error('Stream timed out after', error.timeout);
+    } else if (error.code === 'STREAM_SIZE_LIMIT') {
+      console.error('Stream too large:', error.actual);
+    } else {
+      console.error('Stream error:', error.message);
+    }
+  }
+})();
+```
+
+### Content Type Detection
+
+```javascript
+const { ResponseHelper } = require('rapid-responder');
+
+const testCases = [
+  '{"name": "John"}',
+  '<html><body>Hello</body></html>',
+  '<?xml version="1.0"?><root/>',
+  '<svg></svg>',
+  'body { color: red; }',
+  'SGVsbG8gV29ybGQ=',
+  'Hello World',
+  ''
+];
+
+testCases.forEach(content => {
+  const result = ResponseHelper.prepareBodyMetadata(content);
+  console.log(`Type of "${content.substring(0, 20)}...":`, result.type);
+});
+```
+
+### Express.js Integration
+
+```javascript
+const express = require('express');
+const { httpResponder } = require('rapid-responder');
+
+const app = express();
+app.use(express.json());
+
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = { id: req.params.id, name: 'John Doe' };
+    const response = await httpResponder.ok(user);
+    res.status(response.statusCode).set(response.headers).json(response.body);
+  } catch (error) {
+    const errResponse = await httpResponder.internalServerError({ error: error.message });
+    res.status(errResponse.statusCode).json(errResponse.body);
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
 });
 ```
 
@@ -106,43 +330,104 @@ handler.send(readableStream).then(data => {
 
 ### Classes
 
-#### `ResponseHandler`
+#### `ResponseBuilder`
 
 ##### Constructor
 
 ```javascript
-new ResponseHandler(options)
+new ResponseBuilder(options)
 ```
 - `options`: Configuration object with the following properties:
   - `protocol` (string): Communication protocol (default: `PROTOCOLS.HTTP`).
   - `headers` (object): Response headers.
   - `streamTimeout` (number): Timeout for stream processing (default: `30000ms`).
   - `maxStreamSize` (number): Maximum allowable size for streams (default: `50MB`).
+  - `contentType` (string): Override content type.
+  - `errorHandler` (function): Custom error handler.
 
 ##### Methods
 
 - **`status(code)`**
   - Sets the HTTP status code for the response.
-  - Returns the `ResponseHandler` instance for chaining.
+  - Returns the `ResponseBuilder` instance for chaining.
+
+- **`header(name, value)`**
+  - Sets a single header.
+  - Returns the `ResponseBuilder` instance for chaining.
+
+- **`headers(headers)`**
+  - Sets multiple headers.
+  - Returns the `ResponseBuilder` instance for chaining.
 
 - **`send(body)`**
   - Processes the response body and returns a formatted object or Promise.
+
+### Error Classes
+
+- **`StreamTimeoutError`**: Thrown when a stream exceeds the configured timeout.
+- **`StreamSizeLimitError`**: Thrown when a stream exceeds the maximum allowed size.
+- **`InvalidStatusCodeError`**: Thrown when an invalid status code is set.
+
+### Other Exports
+- `ResponseHelper`: Utility class for content/stream type detection.
+- `PROTOCOLS`, `STATUS_CODES`: Enum objects for protocols and status codes.
+- `httpResponder`, `ipcResponder`, `socketResponder`: Protocol-specific responder objects.
+
+---
+
+## FAQ
+
+**Q: Why do I get a stream timeout error?**
+- A: The stream did not finish within the configured `streamTimeout` (default: 30s). Increase the timeout or check your stream source.
+
+**Q: How do I set a custom content type?**
+- A: Use the `contentType` option in `ResponseBuilder` or set the `Content-Type` header.
+
+**Q: Can I use this with TypeScript?**
+- A: Yes! The library is JSDoc-typed and works well with TypeScript projects.
+
+**Q: How do I handle binary data?**
+- A: If you send a `Buffer` or stream, the response will be `application/octet-stream` by default.
+
+---
+
+## Development & Testing
+
+1. Clone the repository:
+   ```bash
+   git clone <repo-url>
+   cd rapid-responder
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run tests:
+   ```bash
+   npm test
+   ```
+4. Lint code:
+   ```bash
+   npm run lint
+   ```
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please follow the guidelines:
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository.
 2. Create a feature branch.
-3. Submit a pull request with a detailed description of your changes.
+3. Make your changes with clear commit messages.
+4. Ensure all tests pass and code is linted.
+5. Submit a pull request with a detailed description.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ---
 
@@ -150,9 +435,3 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 - Built with ❤️ for the JavaScript community.
 - Inspired by common challenges in handling adaptive responses.
-
----
-
-## Contact
-
-For issues or inquiries, contact the maintainer at `xuan.0211@gmail.com`.
