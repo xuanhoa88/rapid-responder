@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    // Target the ES2020 version for JavaScript compatibility
-    "target": "ES2020",
+    // Target the ES2015 version for JavaScript compatibility
+    "target": "ES2015",
 
     // Module system used in the output, CommonJS for Node.js compatibility
     "module": "CommonJS",

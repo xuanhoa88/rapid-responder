@@ -22,13 +22,14 @@
     "typescript": "4.9.5"
   },
   "scripts": {
+    "postinstall": "npm run build",
     "prepare": "npm run build",
     "build": "tsc --build",
     "build:watch": "tsc --watch",
     "rebuild": "npm run build",
-    "lint": "eslint './src/**/*.ts'",
+    "lint": "eslint '**/*.{ts,js}' --no-cache",
     "lint:fix": "npm run lint -- --fix",
-    "format": "prettier --write './src/**/*.{js,ts,json,md}'",
+    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md}'",
     "test": "jest"
   }
 }

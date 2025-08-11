@@ -6,7 +6,7 @@ module.exports = {
     es6: true, // Updated to support modern JavaScript
   },
   extends: ['eslint:recommended', 'plugin:prettier/recommended'], // Includes Prettier as part of linting
-  parser: '@babel/eslint-parser',
+  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest', // Using the latest ECMAScript version
     sourceType: 'module', // Use ES Modules
